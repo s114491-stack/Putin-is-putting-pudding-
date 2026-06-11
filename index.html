@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>環境幾何區間量測系統</title>
+    <style>
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #ffffff;
+        }
+        .card {
+            background-color: #34495e;
+            padding: 35px 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #00d2ff;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        p {
+            font-size: 17px;
+            line-height: 1.7;
+            margin-bottom: 25px;
+            color: #ecf0f1;
+            text-align: left;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .vertical-btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #00a8ff;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 17px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.1s ease;
+            flex: 1;
+            text-align: center;
+        }
+        button:hover {
+            background-color: #0097e6;
+        }
+        button.no {
+            background-color: #7f8c8d;
+        }
+        button.no:hover {
+            background-color: #718093;
+        }
+        input[type="password"] {
+            width: 85%;
+            padding: 12px;
+            font-size: 17px;
+            border: 1px solid #7f8c8d;
+            background-color: #2c3e50;
+            color: #ffffff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            outline: none;
+        }
+        input[type="password"]:focus {
+            border-color: #00d2ff;
+        }
+        .result {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00d2ff;
+            line-height: 1.8;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1 id="title">空間區間幾何量測</h1>
+    <p id="main-text">正在初始化空間數據...</p>
+    <div id="action-area" class="btn-container"></div>
+</div>
+
+<script>
+    // 在背景建立 5 公分一檔的固定區間數據（從 50cm 到 250cm，共 40 個區間）
+    const intervals = [];
+    for (let i = 51; i <= 250; i += 5) {
+        intervals.push({ min: i - 5, max: i });
+    }
+
+    let left = 0;
+    let right = intervals.length - 1;
+    let currentMid = 0;
+    let finalInterval = null;
+
+    /**
+     * 空間規格問題資料庫 (背景依據公分切點，動態吐出無數字的實物對比問句)
+     * 這裡使用的全部是具備固定高度法規規格的公共設施、車輛與家具
+     */
+    function getScenarioText(checkHeight) {
+        if (checkHeight <= 75) {
+            return `【空間規格】常規家用書桌或辦公桌的桌面高度。如果您完全挺直站立，您的頭頂是否能夠高過這個桌面？`;
+        }
+        if (checkHeight <= 95) {
+            return `【物理界線】國際標準網球賽的球網中央最高點。如果您完全挺直身軀橫躺在平地上，您的身高長度是否高於這個高度？`;
+        }
+        if (checkHeight <= 115) {
+            return `【大眾運輸】台灣高鐵或台鐵列車客廂內，一般座椅椅背的最頂端。如果您完全直立站立在座位旁，您的頭頂是否高過椅背最頂端？`;
+        }
+        if (checkHeight <= 125) {
+            return `【公共設施】大眾運輸車站或政府機關中，無障礙低檯面服務櫃檯的高度。如果您完全挺直站立，您的肩膀是否能高過這個檯面？`;
+        }
+        if (checkHeight <= 135) {
+            return `【大眾運輸】捷運車站內進出站的標準自動驗票閘門鋼殼機身最高處。當您完全直立站立通過閘門時，您的頭頂是否能明顯高過它？`;
+        }
+        if (checkHeight <= 145) {
+            return `【日常交通】街上隨處可見的小型掀背轎車（如掀背款小轎車）的最高車頂高度。如果您完全挺直站立在平地上，您的頭頂是否能與其車頂平齊或更高？`;
+        }
+        if (checkHeight <= 150) {
+            return `【日常交通】一般台灣街頭最常見的標準四門家用小轎車（如常見平價轎車）的最高車頂。如果您在頭頂壓上一根完全水平的長直鋼尺，這根鋼尺是否高於這輛轎車的車頂？`;
+        }
+        if (checkHeight <= 155) {
+            return `【公共法規】公共場所牆面上的火警警報按鈕或對講機外框最上沿的標準法規裝設高度。如果您面朝牆壁站直往前傾倒，您的整顆頭顱（包含下巴以上）是否能高過它？`;
+        }
+        if (checkHeight <= 160) {
+            return `【物理規格】便利商店或大賣場裡，常見的雙門飲料冷藏櫃鋼框頂端總高度。如果您走近並完全挺直站立，您的頭頂是否能與這個冷藏櫃的最上沿一樣高，甚至超過它？`;
+        }
+        if (checkHeight <= 165) {
+            return `【物理規格】營業用大型三門廚房冰箱的標準機身總高度。如果您完全直立站立在冰箱旁，您的頭頂是否能超出它的頂端邊框？`;
+        }
+        if (checkHeight <= 170) {
+            return `【空間容納】有些舊公寓地下室天花板的消防管線、或是防空洞防火門的水泥梁下淨高。當您保持最挺直、不低頭的站姿通過該處時，您的頭頂是否「完全不會」撞擊到它？`;
+        }
+        if (checkHeight <= 175) {
+            return `【物理干涉】公共場所常見統一超商（7-11）內的落地大門玻璃鋼框上沿結構底緣。如果您完全挺直站立通過大門，您的頭頂是否高過該橫向結構底緣？`;
+        }
+        if (checkHeight <= 180) {
+            return `【物理規格】台灣公共場所隨處可見的標準自動販賣機鋼框總高度。如果您完全挺直站立與販賣機並排，您的頭頂是否已經快要跟販賣機的頂端一樣高了？`;
+        }
+        if (checkHeight <= 185) {
+            return `【室內空間】一般大樓住宅內，標準木質房門（不含外框）的門片淨高度。當您完全挺直身軀不彎腰步入房間時，您的頭頂是否高過這個房門片？`;
+        }
+        if (checkHeight <= 190) {
+            return `【室內空間】現代大樓住宅內，臥室標準木質房門連帶上方外框架的總高度。當您完全挺直身軀、不彎腰不低頭地步入房間時，您的頭頂是否會直接正面撞擊到門框最上沿？`;
+        }
+        if (checkHeight <= 195) {
+            return `【大眾運輸】台北捷運或常規公車車廂內部，中央走道上方金屬扶手橫桿的法規淨高度。當您完全挺直站立在車廂中央時，您的頭頂是否高過這根金屬橫桿？`;
+        }
+        if (checkHeight <= 205) {
+            return `【室內空間】一般大樓陽台或大門最外側防盜鐵門、逃生鋼門的整體外框總高度。當您完全挺直站立並走近大門時，您的頭頂是否與大門框最頂端平齊，甚至快要撞到了？`;
+        }
+        if (checkHeight <= 215) {
+            return `【大眾運輸】大眾運輸高運量地下車廂內部，中央通道天花板的最高淨空高度。當您在車廂內完全挺直站立時，您的頭頂是否能直接頂到或被迫低頭才能塞進車廂天花板？`;
+        }
+        if (checkHeight <= 225) {
+            return `【建築法規】國內建築技術規則中，一般住宅居室內天花板水泥大梁下方的法規最低淨高度。如果您挺直站立在梁下，將頭頂往上延伸一小段空間，是否會直接頂到水泥梁？`;
+        }
+        if (checkHeight <= 235) {
+            return `【幾何容積】標準 20 呎貨櫃的內部淨空高度。如果您完全挺直站立在貨櫃內部，將您的總身高加上一個大約 30 公分高的正立方體紙箱疊在頭頂，這箱子頂端是否會撞到貨櫃的鋼板天花板？`;
+        }
+        return `【物理界線】國際 FIBA 標準籃球賽的籃框鐵圈高度。如果您完全挺直身軀，將兩個您一模一樣垂直疊羅漢（即總高度為您的身高乘以二），最上方那個您的頭頂是否能超過籃框的最高面？`;
+    }
+
+    // 二分搜尋法區間詢問
+    function askQuestion() {
+        if (left <= right) {
+            // 當左右指標重合時，代表已經精確抓到唯一的 5 公分區間
+            if (left === right) {
+                finalInterval = intervals[left];
+                askAuthorQuestion();
+                return;
+            }
+
+            currentMid = Math.floor((left + right) / 2);
+            let checkPoint = intervals[currentMid].max;
+
+            // 調整畫面文字為無數字的參照物問句
+            document.getElementById('main-text').innerText = getScenarioText(checkPoint);
+            document.getElementById('action-area').className = "btn-container";
+            document.getElementById('action-area').innerHTML = `
+                <button onclick="handleAnswer(true)">是 (或更高/會撞到)</button>
+                <button class="no" onclick="handleAnswer(false)">否 (或更低/有空隙)</button>
+            `;
+        } else {
+            askAuthorQuestion();
+        }
+    }
+
+    // 處理二分法答案
+    function handleAnswer(isGreater) {
+        if (isGreater) {
+            left = currentMid + 1; // 答案在更右邊的區間
+        } else {
+            right = currentMid;    // 答案包含目前及更左邊的區間
+        }
+        askQuestion();
+    }
+
+    // 倒數第二步：詢問是否為網站作者（題目要求的最後一個問題）
+    function askAuthorQuestion() {
+        document.getElementById('title').innerText = "系統安全性驗證";
+        document.getElementById('main-text').innerText = "最後一項核對：您是否是這個網站的作者？";
+        document.getElementById('action-area').className = "btn-container";
+        document.getElementById('action-area').innerHTML = `
+            <button onclick="handleAuthor(true)">是</button>
+            <button class="no" onclick="handleAuthor(false)">不是</button>
+        `;
+    }
+
+    // 處理作者身份分支
+    function handleAuthor(isAuthor) {
+        if (!isAuthor) {
+            // 顯示最終歸納出來的 5 公分落點區間
+            showResult(`量測完畢！經精密計算，您的身高落點區間為：<br><br><span style="font-size: 38px; color: #00d2ff; font-weight: 800;">${finalInterval.min} ~ ${finalInterval.max}</span> 公分！`);
+        } else {
+            // 顯示數字密碼輸入框
+            document.getElementById('main-text').innerText = "請輸入密碼驗證您的身份：";
+            document.getElementById('action-area').className = "vertical-btn-container";
+            document.getElementById('action-area').innerHTML = `
+                <input type="password" id="passwordInput" placeholder="請在此輸入管理員密碼"><br>
+                <button onclick="verifyPassword()">送出驗證</button>
+            `;
+        }
+    }
+
+    // 密碼驗證邏輯與自訂回應文字
+    function verifyPassword() {
+        let inputBox = document.getElementById('passwordInput');
+        if (inputBox.value === "314159092327") {
+            showResult("您設計出了這個造福人類的網頁，真是太偉大了! 不論是您的身高、智商或地位，絕對都是全人類最高的，無庸置疑。");
+        } else {
+            showResult("由於您嘗試冒充網頁作者的身分，行為過於惡劣，因此您不配擁有身高。");
+        }
+    }
+
+    // 顯示最終結果畫面
+    function showResult(message) {
+        document.getElementById('title').innerText = "系統分析報告";
+        document.getElementById('main-text').className = "result";
+        document.getElementById('main-text').innerHTML = message;
+        document.getElementById('action-area').innerHTML = ""; 
+    }
+
+    // 啟動測驗
+    askQuestion();
+</script>
+
+</body>
+</html>
